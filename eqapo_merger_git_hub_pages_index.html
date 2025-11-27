@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EQAPO Merger — Web</title>
+  <style>
+    :root{--bg:#071022;--card:#0b1220;--muted:#9aa4b2;--accent:#7c9cff;--title:#ffb74d;--param:#7c9cff;--value:#f0f0f0}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#e6eef8}
+    .wrap{max-width:1200px;margin:28px auto;padding:18px}
+    h1{margin:0 0 6px;font-weight:600}
+    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px}
+    .panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 30px rgba(0,0,0,0.45)}
+    .row{display:flex;gap:10px;align-items:center;margin-top:12px}
+    input[type=file]{display:none}
+    button.primary{background:linear-gradient(90deg,var(--accent),#5b8cff);border:0;padding:8px 12px;border-radius:8px;color:white;font-weight:600;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    #plotCanvas{width:100%;height:500px;border-radius:8px;background:#071322;display:block;margin-top:12px}
+    .controls{display:flex;gap:12px;align-items:center;margin-top:12px}
+    label.small{font-size:13px;color:var(--muted);display:block}
+    .code-out{background:#071322;padding:10px;border-radius:8px;font-family:monospace;font-size:12px;max-height:400px;overflow:auto;margin-top:12px;white-space:pre-wrap}
+    .files-panel{margin-top:12px;display:flex;gap:12px}
+    .files-list{width:320px;max-height:320px;overflow:auto;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02)}
+    .file-row{display:flex;align-items:center;justify-content:space-between;padding:6px;border-radius:6px}
+    .file-left{display:flex;align-items:center;gap:8px}
+    .small-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer}
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+    @media (max-width:900px){#plotCanvas{height:320px}.files-panel{flex-direction:column}}
+    .filter-title{color:var(--title);display:inline-block;width:80px}
+    .filter-param{color:var(--param);display:inline-block;width:100px}
+    .filter-value{color:var(--value);display:inline-block;width:80px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>EQAPO Merger — Web</h1>
+    <p class="lead">Select multiple EQ APO preset files (.txt). The app automatically merges enabled presets (preamp = average; each filter gain ÷ N). Use the file list to enable/disable, remove or add presets. Adjust Y-range with sliders. Export merged .txt when ready.</p>
+
+    <div class="panel">
+      <div class="row">
+        <label class="small">Files</label>
+        <input id="fileInput" type="file" accept=".txt,.cfg,.ini" multiple />
+        <button id="chooseBtn" class="primary">Add presets</button>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button id="exportBtn" class="primary">Download merged preset</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div>
+          <label class="small">Min dB</label>
+          <input id="minDb" type="range" min="-24" max="0" value="-12">
+          <div class="note"><span id="minDbLabel">-12</span> dB</div>
+        </div>
+        <div>
+          <label class="small">Max dB</label>
+          <input id="maxDb" type="range" min="0" max="24" value="3">
+          <div class="note"><span id="maxDbLabel">3</span> dB</div>
+        </div>
+        <div style="margin-left:auto" class="muted">Y-range adjustable with sliders (defaults: -12 → +3 dB)</div>
+      </div>
+
+      <div class="files-panel">
+        <div class="files-list" id="filesList" aria-label="Loaded presets">
+          <div class="muted">No presets loaded.</div>
+        </div>
+        <canvas id="plotCanvas"></canvas>
+      </div>
+
+      <div id="mergedText" class="code-out">No merged preset yet.</div>
+    </div>
+  </div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const chooseBtn = document.getElementById('chooseBtn');
+const exportBtn = document.getElementById('exportBtn');
+const filesList = document.getElementById('filesList');
+const mergedText = document.getElementById('mergedText');
+const canvas = document.getElementById('plotCanvas');
+const ctx = canvas.getContext('2d');
+const minDb = document.getElementById('minDb');
+const maxDb = document.getElementById('maxDb');
+const minDbLabel = document.getElementById('minDbLabel');
+const maxDbLabel = document.getElementById('maxDbLabel');
+
+let presets = [];
+let lastMerged = null;
+let nextId = 1;
+
+const PREAMP_RE = /Preamp:\s*([\-\d\.]+)/i;
+const FILTER_RE = /Filter\s*\d+:\s*ON\s*(\w+)\s*Fc\s*([\d\.]+)\s*Hz\s*Gain\s*([\-\d\.]+)\s*dB\s*Q\s*([\d\.]+)/i;
+
+chooseBtn.addEventListener('click', ()=> fileInput.click());
+
+fileInput.addEventListener('change', async ()=>{
+  if(!fileInput.files || fileInput.files.length===0) return;
+  const files = Array.from(fileInput.files);
+  for(const file of files){
+    try{
+      const text = await file.text();
+      const parsed = parsePreset(text);
+      const exists = presets.some(p => p.name === file.name);
+      const entry = { id: nextId++, name: file.name, preamp: parsed.preamp, filters: parsed.filters, enabled: true };
+      if(!exists) presets.push(entry);
+    }catch(err){ console.error('Failed to read', file.name, err); }
+  }
+  renderFileList();
+  updatePlot();
+  fileInput.value = null;
+});
+
+exportBtn.addEventListener('click', ()=>{
+  const enabledPresets = presets.filter(p=>p.enabled);
+  if(enabledPresets.length===0) return alert('No enabled presets to merge.');
+  const merged = simpleMerge(enabledPresets);
+  const txt = buildMergedTextHelper(merged);
+  const blob = new Blob([txt], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ApoMerged.txt'; a.click(); URL.revokeObjectURL(url);
+});
+
+minDb.addEventListener('input', ()=>{ minDbLabel.textContent = minDb.value; updatePlot(); });
+maxDb.addEventListener('input', ()=>{ maxDbLabel.textContent = maxDb.value; updatePlot(); });
+
+function parsePreset(text){
+  const lines = text.split(/\r?\n/);
+  let preamp = 0;
+  const filters = [];
+  for(const raw of lines){
+    const line = raw.trim(); if(!line) continue;
+    const pm = line.match(PREAMP_RE); if(pm){ preamp = parseFloat(pm[1]); continue; }
+    const fm = line.match(FILTER_RE); if(fm){ filters.push({ type: fm[1].toUpperCase(), fc: parseFloat(fm[2]), gain: parseFloat(fm[3]), q: parseFloat(fm[4]) }); }
+  }
+  return { preamp, filters };
+}
+
+function simpleMerge(presetEntries){
+  if(!presetEntries || presetEntries.length===0) return { preamp:0, filters:[] };
+  const n = presetEntries.length;
+  const mergedPreamp = presetEntries.reduce((s,p)=>s+p.preamp,0)/n;
+  const mergedFilters = presetEntries.flatMap(p => p.filters).map(f => ({ type: f.type, fc: f.fc, gain: f.gain / n, q: f.q })).sort((a,b)=>a.fc - b.fc);
+  return { preamp: mergedPreamp, filters: mergedFilters };
+}
+
+function buildMergedTextHelper(merged){
+  let out = `Preamp: ${merged.preamp.toFixed(2)} dB\n\n`;
+  merged.filters.forEach((f,i)=>{
+    out += `%cFilter ${i+1}:%c ${f.type} Fc ${f.fc.toFixed(2)} Hz Gain ${f.gain.toFixed(2)} dB Q ${f.q.toFixed(2)}\n`;
+  });
+  return out;
+}
+
+function renderFileList(){
+  filesList.innerHTML = '';
+  if(presets.length === 0){ filesList.innerHTML = '<div class="muted">No presets loaded.</div>'; return; }
+  for(const p of presets){
+    const row = document.createElement('div'); row.className = 'file-row';
+    const left = document.createElement('div'); left.className = 'file-left';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = !!p.enabled; cb.addEventListener('change', ()=>{ p.enabled=cb.checked; updatePlot(); });
+    const label = document.createElement('div'); label.textContent = p.name; label.style.fontSize='13px'; label.style.color='#e6eef8';
+    left.appendChild(cb); left.appendChild(label);
+    const right = document.createElement('div');
+    const removeBtn = document.createElement('button'); removeBtn.className='small-btn'; removeBtn.textContent='Remove'; removeBtn.addEventListener('click', ()=>{ presets = presets.filter(x=>x.id!==p.id); renderFileList(); updatePlot(); });
+    right.appendChild(removeBtn);
+    row.appendChild(left); row.appendChild(right);
+    filesList.appendChild(row);
+  }
+}
+
+function magnitudeResponseAt(freq,f){
+  const fc=f.fc||1000; const q=(f.q&&f.q>0)?f.q:1.0; const gain=f.gain||0;
+  const bw=Math.max(1,fc/(q*2)); const diff=Math.log(freq)-Math.log(fc);
+  const std=Math.log(1+bw/fc); if(std<=0)return 0;
+  return gain*Math.exp(-0.5*(diff*diff)/(std*std));
+}
+
+function totalGainAt(freq,merged){
+  let sum = merged.preamp||0;
+  for(const f of merged.filters) sum += magnitudeResponseAt(freq,f);
+  return sum;
+}
+
+function updatePlot(){
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=Math.floor(canvas.clientWidth*dpr);
+  canvas.height=Math.floor(canvas.clientHeight*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#071322'; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
+
+  const w=canvas.clientWidth; const h=canvas.clientHeight;
+  const left=50; const right=w-12; const top=12; const bottom=h-36;
+
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+  const freqs=[20,50,100,200,500,1000,2000,5000,10000,20000];
+  for(const f of freqs){ const x=xForFreq(f,left,right); ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke(); }
+
+  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  const minY=parseFloat(minDb.value); const maxY=parseFloat(maxDb.value);
+  for(let y=Math.ceil(minY);y<=Math.floor(maxY);y+=3){ const yy=yToPixel(y,top,bottom,minY,maxY); ctx.beginPath(); ctx.moveTo(left,yy); ctx.lineTo(right,yy); ctx.stroke(); }
+
+  const enabled = presets.filter(p=>p.enabled);
+  if(enabled.length===0){ mergedText.textContent='No enabled presets.'; lastMerged=null; return; }
+  const merged = simpleMerge(enabled); lastMerged=merged;
+
+  const sampleFreqs=[]; for(let i=0;i<800;i++) sampleFreqs.push(Math.pow(10, Math.log10(20)+(i/799)*(Math.log10(20000)-Math.log10(20))));
+  const values=sampleFreqs.map(f=>totalGainAt(f,merged));
+
+  ctx.strokeStyle='#7c9cff'; ctx.lineWidth=2.2; ctx.beginPath();
+  for(let i=0;i<sampleFreqs.length;i++){ const x=xForFreq(sampleFreqs[i],left,right); const y=yToPixel(values[i],top,bottom,minY,maxY); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+  ctx.stroke();
+
+  ctx.fillStyle='#9aa4b2'; ctx.font='12px Inter, Arial'; ctx.textAlign='center';
+  for(const f of freqs){ const x=xForFreq(f,left,right); ctx.fillText(String(f),x,bottom+18); }
+  ctx.textAlign='right'; ctx.fillText(maxY+' dB',left-8,top+6); ctx.fillText(minY+' dB',left-8,bottom+6);
+
+  mergedText.innerHTML = ''; mergedText.appendChild(buildMergedTextHTML(merged));
+}
+
+function buildMergedTextHTML(merged){
+  const container = document.createElement('div');
+  const preampDiv = document.createElement('div'); preampDiv.innerHTML=`<span style='color:${'#ffb74d'}'>Preamp:</span> <span style='color:${'#f0f0f0'}'>${merged.preamp.toFixed(2)} dB</span>`;
+  container.appendChild(preampDiv);
+  merged.filters.forEach((f,i)=>{
+    const fdiv = document.createElement('div');
+    fdiv.innerHTML = `<span style='color:${'#ffb74d'}'>Filter ${i+1}:</span> <span style='color:${'#7c9cff'}'>${f.type} Fc</span> <span style='color:${'#f0f0f0'}'>${f.fc.toFixed(2)} Hz</span> <span style='color:${'#7c9cff'}'>Gain</span> <span style='color:${'#f0f0f0'}'>${f.gain.toFixed(2)} dB</span> <span style='color:${'#7c9cff'}'>Q</span> <span style='color:${'#f0f0f0'}'>${f.q.toFixed(2)}</span>`;
+    container.appendChild(fdiv);
+  });
+  return container;
+}
+
+function xForFreq(freq,left,right){ const logMin=Math.log10(20); const logMax=Math.log10(20000); const t=(Math.log10(freq)-logMin)/(logMax-logMin); return left+t*(right-left); }
+function yToPixel(db,top,bottom,minY,maxY){ const t=(db-minY)/(maxY-minY); return bottom-t*(bottom-top); }
+
+window.addEventListener('resize',()=>updatePlot());
+renderFileList();
+updatePlot();
+</script>
+</body>
+</html>
