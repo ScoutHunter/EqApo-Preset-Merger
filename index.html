@@ -3,81 +3,312 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EQAPO Merger — Web</title>
+  <title>EQAPO Merger — Web (Updated)</title>
   <style>
-    :root{--bg:#071022;--card:#0b1220;--muted:#9aa4b2;--accent:#7c9cff;--title:#ffb74d;--param:#7c9cff;--value:#f0f0f0}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#e6eef8}
-    .wrap{max-width:1200px;margin:28px auto;padding:18px}
-    h1{margin:0 0 6px;font-weight:600}
-    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px}
-    .panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 30px rgba(0,0,0,0.45)}
-    .row{display:flex;gap:10px;align-items:center;margin-top:12px}
+    :root{
+      --bg:#071022;
+      --card:#0b1220;
+      --muted:#9aa4b2;
+      --accent:#7c9cff;
+      --title:#ffb74d;
+      --param:#7c9cff;
+      --value:#f0f0f0;
+      --panel-padding:16px;
+      --radius:12px;
+    }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      height:auto;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;
+      background:var(--bg);
+      color:#e6eef8;
+      overflow-y:auto;
+    }
+
+    .wrap{
+      max-width:95vw;
+      margin:20px auto;
+      padding:18px;
+      box-sizing:border-box;
+      height:auto;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+
+    h1{
+      margin:0;
+      font-weight:600;
+      font-size:20px;
+    }
+
+    p.lead{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      max-width:70ch;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:var(--panel-padding);
+      box-shadow:0 8px 40px rgba(0,0,0,0.6);
+      height:auto;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
     input[type=file]{display:none}
-    button.primary{background:linear-gradient(90deg,var(--accent),#5b8cff);border:0;padding:8px 12px;border-radius:8px;color:white;font-weight:600;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-    #plotCanvas{width:100%;height:500px;border-radius:8px;background:#071322;display:block;margin-top:12px}
-    .controls{display:flex;gap:12px;align-items:center;margin-top:12px}
-    label.small{font-size:13px;color:var(--muted);display:block}
-    .code-out{background:#071322;padding:10px;border-radius:8px;font-family:monospace;font-size:12px;max-height:400px;overflow:auto;margin-top:12px;white-space:pre-wrap}
-    .files-panel{margin-top:12px;display:flex;gap:12px}
-    .files-list{width:320px;max-height:320px;overflow:auto;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02)}
-    .file-row{display:flex;align-items:center;justify-content:space-between;padding:6px;border-radius:6px}
-    .file-left{display:flex;align-items:center;gap:8px}
-    .small-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer}
-    .note{font-size:12px;color:var(--muted);margin-top:8px}
-    @media (max-width:900px){#plotCanvas{height:320px}.files-panel{flex-direction:column}}
-    .filter-title{color:var(--title);display:inline-block;width:80px}
-    .filter-param{color:var(--param);display:inline-block;width:100px}
-    .filter-value{color:var(--value);display:inline-block;width:80px}
+
+    button.primary{
+      background:linear-gradient(90deg,var(--accent),#5b8cff);
+      border:0;
+      padding:8px 12px;
+      border-radius:8px;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    /* Layout */
+    .files-panel{
+      margin-top:12px;
+      display:flex;
+      gap:18px;
+      align-items:stretch;
+      height:auto;
+    }
+
+    .files-list{
+      flex:0 0 440px;
+      max-width:560px;
+      min-width:320px;
+      overflow:auto;
+      padding:12px;
+      border-radius:10px;
+      background:rgba(255,255,255,0.02);
+      box-sizing:border-box;
+      height: calc(100vh - 220px);
+    }
+
+    .file-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px;
+      border-radius:8px;
+      margin-bottom:6px;
+    }
+
+    .file-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      max-width:100%;
+    }
+
+    .file-left .name{
+      font-size:13px;
+      color:var(--value);
+      word-break:break-word;
+      white-space:normal;
+      max-width:300px;
+    }
+
+    .small-btn{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.04);
+      padding:6px;
+      border-radius:8px;
+      color:var(--muted);
+      font-size:12px;
+      cursor:pointer;
+    }
+
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:8px;
+    }
+
+    /* Canvas */
+    #plotWrap{
+      flex:1 1 auto;
+      min-width:300px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      height:auto;
+    }
+
+    #plotCanvas{
+      width:100%;
+      height:640px;
+      border-radius:10px;
+      background:#071322;
+      display:block;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .legend-item{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:13px;
+    }
+
+    .legend-swatch{
+      width:12px;
+      height:6px;
+      border-radius:2px;
+    }
+
+    /* Controls */
+    .controls{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    label.small{
+      font-size:13px;
+      color:var(--muted);
+      display:block;
+    }
+
+    .range-group{min-width:120px}
+
+    @media (max-width:1100px){
+      .files-panel{flex-direction:column}
+      .files-list{width:100%;height:280px}
+      #plotCanvas{height:360px}
+      .code-out{max-height:140px}
+    }
+
+    /* Filter formatting */
+    .filter-title{
+      color:var(--title);
+      display:inline-block;
+      width:80px;
+    }
+
+    .filter-param{
+      color:var(--param);
+      display:inline-block;
+      width:100px;
+    }
+
+    .filter-value{
+      color:var(--value);
+      display:inline-block;
+      width:80px;
+    }
+
+    /* FINAL FIX – fully expanding filter output */
+    .code-out{
+      background:#071322;
+      padding:12px;
+      border-radius:10px;
+      font-family:monospace;
+      font-size:13px;
+      white-space:pre-wrap;
+
+      height:auto;
+      max-height:none;
+      overflow:visible;
+    }
+
+    /* Right panel expands with content */
+    .right-panel{
+      display:flex;
+      flex-direction:column;
+      height:auto;
+      max-height:none;
+      overflow:visible;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>EQAPO Merger — Web</h1>
-    <p class="lead">Select multiple EQ APO preset files (.txt). The app automatically merges enabled presets (preamp = average; each filter gain ÷ N). Use the file list to enable/disable, remove or add presets. Adjust Y-range with sliders. Export merged .txt when ready.</p>
+    <header>
+      <div>
+        <h1>EQAPO Merger</h1>
+        <p class="lead">Select multiple EQ APO preset files (.txt). The app merges enabled presets (preamp = average; each filter gain ÷ N). Adjust the Y-range, compare per-preset curves and the merged result. Export merged .txt when ready.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button id="exportBtnHeader" class="primary">Download merged preset</button>
+      </div>
+    </header>
 
-    <div class="panel">
+    <div class="panel" role="application" aria-label="EQ Merger panel">
       <div class="row">
-        <label class="small">Files</label>
         <input id="fileInput" type="file" accept=".txt,.cfg,.ini" multiple />
         <button id="chooseBtn" class="primary">Add presets</button>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <button id="exportBtn" class="primary">Download merged preset</button>
+          <div class="muted">Y-range:</div>
+          <div class="range-group">
+            <label class="small">Min dB</label>
+            <input id="minDb" type="range" min="-24" max="0" value="-12">
+            <div class="note"><span id="minDbLabel">-12</span> dB</div>
+          </div>
+          <div class="range-group">
+            <label class="small">Max dB</label>
+            <input id="maxDb" type="range" min="0" max="24" value="0">
+            <div class="note"><span id="maxDbLabel">3</span> dB</div>
+          </div>
         </div>
       </div>
 
-      <div class="controls">
-        <div>
-          <label class="small">Min dB</label>
-          <input id="minDb" type="range" min="-24" max="0" value="-12">
-          <div class="note"><span id="minDbLabel">-12</span> dB</div>
-        </div>
-        <div>
-          <label class="small">Max dB</label>
-          <input id="maxDb" type="range" min="0" max="24" value="3">
-          <div class="note"><span id="maxDbLabel">3</span> dB</div>
-        </div>
-        <div style="margin-left:auto" class="muted">Y-range adjustable with sliders (defaults: -12 → +3 dB)</div>
-      </div>
-
-      <div class="files-panel">
+      <div class="files-panel" aria-live="polite">
         <div class="files-list" id="filesList" aria-label="Loaded presets">
           <div class="muted">No presets loaded.</div>
         </div>
-        <canvas id="plotCanvas"></canvas>
-      </div>
 
-      <div id="mergedText" class="code-out">No merged preset yet.</div>
+        <div id="plotWrap">
+          <div class="legend" id="legend"></div>
+          <canvas id="plotCanvas" aria-label="Frequency response plot"></canvas>
+          <div id="mergedText" class="code-out" aria-live="polite">No merged preset yet.</div>
+        </div>
+      </div>
     </div>
   </div>
 
 <script>
+/* ========= UI elements ========= */
 const fileInput = document.getElementById('fileInput');
 const chooseBtn = document.getElementById('chooseBtn');
-const exportBtn = document.getElementById('exportBtn');
+const exportBtnHeader = document.getElementById('exportBtnHeader');
 const filesList = document.getElementById('filesList');
 const mergedText = document.getElementById('mergedText');
 const canvas = document.getElementById('plotCanvas');
+const legend = document.getElementById('legend');
 const ctx = canvas.getContext('2d');
 const minDb = document.getElementById('minDb');
 const maxDb = document.getElementById('maxDb');
@@ -88,12 +319,28 @@ let presets = [];
 let lastMerged = null;
 let nextId = 1;
 
+/* === Regexes === */
 const PREAMP_RE = /Preamp:\s*([\-\d\.]+)/i;
 const FILTER_RE = /Filter\s*\d+:\s*ON\s*(\w+)\s*Fc\s*([\d\.]+)\s*Hz\s*Gain\s*([\-\d\.]+)\s*dB\s*Q\s*([\d\.]+)/i;
 
-chooseBtn.addEventListener('click', ()=> fileInput.click());
+/* === color palette === */
+const COLOR_PALETTE = [
+  '#ff6b6b','#4ecdc4','#ffe66d','#5dade2','#bb8fce','#48c9b0','#f4d03f','#ec7063','#7c9cff','#2ecc71'
+];
 
-fileInput.addEventListener('change', async ()=>{
+function colorForIndex(i){
+  return COLOR_PALETTE[i % COLOR_PALETTE.length];
+}
+
+/* === Event wiring === */
+chooseBtn.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', handleFiles);
+exportBtnHeader.addEventListener('click', handleExport);
+minDb.addEventListener('input', ()=>{ minDbLabel.textContent = minDb.value; updatePlot(); });
+maxDb.addEventListener('input', ()=>{ maxDbLabel.textContent = maxDb.value; updatePlot(); });
+
+/* ========== File handling & parsing (kept compatible) ========== */
+async function handleFiles(){
   if(!fileInput.files || fileInput.files.length===0) return;
   const files = Array.from(fileInput.files);
   for(const file of files){
@@ -101,27 +348,21 @@ fileInput.addEventListener('change', async ()=>{
       const text = await file.text();
       const parsed = parsePreset(text);
       const exists = presets.some(p => p.name === file.name);
-      const entry = { id: nextId++, name: file.name, preamp: parsed.preamp, filters: parsed.filters, enabled: true };
+      const entry = {
+        id: nextId++,
+        name: file.name,
+        preamp: parsed.preamp,
+        filters: parsed.filters,
+        enabled: true,
+        color: colorForIndex(nextId) // persistent per session id
+      };
       if(!exists) presets.push(entry);
     }catch(err){ console.error('Failed to read', file.name, err); }
   }
   renderFileList();
   updatePlot();
   fileInput.value = null;
-});
-
-exportBtn.addEventListener('click', ()=>{
-  const enabledPresets = presets.filter(p=>p.enabled);
-  if(enabledPresets.length===0) return alert('No enabled presets to merge.');
-  const merged = simpleMerge(enabledPresets);
-  const txt = buildMergedTextHelper(merged);
-  const blob = new Blob([txt], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'ApoMerged.txt'; a.click(); URL.revokeObjectURL(url);
-});
-
-minDb.addEventListener('input', ()=>{ minDbLabel.textContent = minDb.value; updatePlot(); });
-maxDb.addEventListener('input', ()=>{ maxDbLabel.textContent = maxDb.value; updatePlot(); });
+}
 
 function parsePreset(text){
   const lines = text.split(/\r?\n/);
@@ -130,92 +371,340 @@ function parsePreset(text){
   for(const raw of lines){
     const line = raw.trim(); if(!line) continue;
     const pm = line.match(PREAMP_RE); if(pm){ preamp = parseFloat(pm[1]); continue; }
-    const fm = line.match(FILTER_RE); if(fm){ filters.push({ type: fm[1].toUpperCase(), fc: parseFloat(fm[2]), gain: parseFloat(fm[3]), q: parseFloat(fm[4]) }); }
+    const fm = line.match(FILTER_RE); if(fm){
+      filters.push({
+        type: fm[1].toUpperCase(),
+        fc: parseFloat(fm[2]),
+        gain: parseFloat(fm[3]),
+        q: parseFloat(fm[4])
+      });
+    }
   }
   return { preamp, filters };
 }
 
+/* ========== Merge logic (same semantics) ========== */
 function simpleMerge(presetEntries){
   if(!presetEntries || presetEntries.length===0) return { preamp:0, filters:[] };
   const n = presetEntries.length;
   const mergedPreamp = presetEntries.reduce((s,p)=>s+p.preamp,0)/n;
+  // keep filter fc & q as-is, but divide gain by n (same behavior as before)
   const mergedFilters = presetEntries.flatMap(p => p.filters).map(f => ({ type: f.type, fc: f.fc, gain: f.gain / n, q: f.q })).sort((a,b)=>a.fc - b.fc);
   return { preamp: mergedPreamp, filters: mergedFilters };
 }
 
+/* ========== Export builder (keeps format, but cleaned) ========== */
 function buildMergedTextHelper(merged){
   let out = `Preamp: ${merged.preamp.toFixed(2)} dB\n\n`;
   merged.filters.forEach((f,i)=>{
-    out += `%cFilter ${i+1}:%c ${f.type} Fc ${f.fc.toFixed(2)} Hz Gain ${f.gain.toFixed(2)} dB Q ${f.q.toFixed(2)}\n`;
+    out += `Filter ${i+1}: ON ${f.type} Fc ${f.fc.toFixed(2)} Hz Gain ${f.gain.toFixed(2)} dB Q ${f.q.toFixed(2)}\n`;
   });
   return out;
 }
 
+function handleExport(){
+  const enabledPresets = presets.filter(p=>p.enabled);
+  if(enabledPresets.length===0) return alert('No enabled presets to merge.');
+  const merged = simpleMerge(enabledPresets);
+  const txt = buildMergedTextHelper(merged);
+  const blob = new Blob([txt], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ApoMerged.txt'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ========== File list rendering (name colored to curve) ========== */
 function renderFileList(){
   filesList.innerHTML = '';
+  legend.innerHTML = '';
   if(presets.length === 0){ filesList.innerHTML = '<div class="muted">No presets loaded.</div>'; return; }
+
   for(const p of presets){
     const row = document.createElement('div'); row.className = 'file-row';
     const left = document.createElement('div'); left.className = 'file-left';
-    const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = !!p.enabled; cb.addEventListener('change', ()=>{ p.enabled=cb.checked; updatePlot(); });
-    const label = document.createElement('div'); label.textContent = p.name; label.style.fontSize='13px'; label.style.color='#e6eef8';
-    left.appendChild(cb); left.appendChild(label);
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = !!p.enabled;
+    cb.addEventListener('change', ()=>{ p.enabled=cb.checked; updatePlot(); });
+
+    const sw = document.createElement('div'); sw.style.width='10px'; sw.style.height='10px'; sw.style.borderRadius='3px';
+    sw.style.background = p.color; sw.title = 'Preset color';
+
+    const label = document.createElement('div'); label.className='name';
+    label.textContent = p.name; label.style.color = p.color;
+    left.appendChild(cb); left.appendChild(sw); left.appendChild(label);
+
     const right = document.createElement('div');
-    const removeBtn = document.createElement('button'); removeBtn.className='small-btn'; removeBtn.textContent='Remove'; removeBtn.addEventListener('click', ()=>{ presets = presets.filter(x=>x.id!==p.id); renderFileList(); updatePlot(); });
+    const removeBtn = document.createElement('button'); removeBtn.className='small-btn'; removeBtn.textContent='Remove';
+    removeBtn.addEventListener('click', ()=>{ presets = presets.filter(x=>x.id!==p.id); renderFileList(); updatePlot(); });
     right.appendChild(removeBtn);
     row.appendChild(left); row.appendChild(right);
     filesList.appendChild(row);
+
+    // legend item
+    const legendItem = document.createElement('div'); legendItem.className='legend-item';
+    const swatch = document.createElement('span'); swatch.className='legend-swatch';
+    swatch.style.background = p.color;
+    const text = document.createElement('span'); text.textContent = p.name; text.style.color=p.color;
+    legendItem.appendChild(swatch); legendItem.appendChild(text);
+    legend.appendChild(legendItem);
   }
 }
 
-function magnitudeResponseAt(freq,f){
+/* ========== Frequency response math ===========
+   We'll render each preset's full frequency response.
+   For better accuracy: implement RBJ biquad formulas for PEAK (PK), low shelf (LSC), high shelf (HSC).
+   Other unknown filter types fallback to the older gaussian approximation so nothing breaks.
+   We compute linear frequency response H(f) for each filter, multiply them and convert to dB, then add preamp.
+   Use sample rate = 48000 Hz for digital biquad design (common but only used for computation).
+   ================================================== */
+
+const FS = 192000; // used for digital biquad design
+
+function dbToLinear(db){ return Math.pow(10, db/20); }
+function linearToDb(x){ return 20*Math.log10(Math.max(1e-12, x)); }
+
+/* RBJ cookbook coefficient builder for given filter type */
+function biquadCoeffs(type, fc, Q, gainDb){
+  const A = Math.pow(10, gainDb/40); // amplitude for shelving and peak
+  const w0 = 2*Math.PI*fc/FS;
+  const cosw0 = Math.cos(w0);
+  const sinw0 = Math.sin(w0);
+  const alpha = sinw0 / (2 * Math.max(0.0001, Q));
+  let b0,b1,b2,a0,a1,a2;
+
+  switch(type){
+    case 'PK':
+    case 'PEAK':
+      b0 = 1 + alpha * A;
+      b1 = -2 * cosw0;
+      b2 = 1 - alpha * A;
+      a0 = 1 + alpha / A;
+      a1 = -2 * cosw0;
+      a2 = 1 - alpha / A;
+      break;
+    case 'LSC': // low shelf
+    case 'LSHELF':
+    case 'LOWSHELF':
+      {
+        const sqrtA = Math.sqrt(A);
+        const twoSqrtAalpha = 2 * sqrtA * alpha;
+        b0 = A*( (A+1) - (A-1)*cosw0 + twoSqrtAalpha );
+        b1 = 2*A*( (A-1) - (A+1)*cosw0 );
+        b2 = A*( (A+1) - (A-1)*cosw0 - twoSqrtAalpha );
+        a0 = (A+1) + (A-1)*cosw0 + twoSqrtAalpha;
+        a1 = -2*( (A-1) + (A+1)*cosw0 );
+        a2 = (A+1) + (A-1)*cosw0 - twoSqrtAalpha;
+      }
+      break;
+    case 'HSC': // high shelf
+    case 'HSHELF':
+    case 'HIGHSHELF':
+      {
+        const sqrtA = Math.sqrt(A);
+        const twoSqrtAalpha = 2 * sqrtA * alpha;
+        b0 = A*( (A+1) + (A-1)*cosw0 + twoSqrtAalpha );
+        b1 = -2*A*( (A-1) + (A+1)*cosw0 );
+        b2 = A*( (A+1) + (A-1)*cosw0 - twoSqrtAalpha );
+        a0 = (A+1) - (A-1)*cosw0 + twoSqrtAalpha;
+        a1 = 2*( (A-1) - (A+1)*cosw0 );
+        a2 = (A+1) - (A-1)*cosw0 - twoSqrtAalpha;
+      }
+      break;
+    default:
+      // Unknown: return null to indicate fallback
+      return null;
+  }
+
+  // Normalize (so a0 = 1)
+  return {
+    b0: b0 / a0,
+    b1: b1 / a0,
+    b2: b2 / a0,
+    a1: a1 / a0,
+    a2: a2 / a0
+  };
+}
+
+/* compute complex H(e^jw) magnitude for given biquad coeffs at frequency f */
+function biquadMagnitudeAt(freq, coeffs){
+  const w = 2*Math.PI*freq/FS;
+  const cosw = Math.cos(w), cos2w = Math.cos(2*w);
+  const sinw = Math.sin(w), sin2w = Math.sin(2*w);
+
+  // numerator real/imag
+  // b0 + b1 e^{-jw} + b2 e^{-j2w} == (b0 + b1 cosw + b2 cos2w) + j*(-b1 sinw - b2 sin2w)
+  const nr = coeffs.b0 + coeffs.b1 * Math.cos(w) + coeffs.b2 * Math.cos(2*w);
+  const ni = -coeffs.b1 * Math.sin(w) - coeffs.b2 * Math.sin(2*w);
+
+  // denominator a0=1 assumed, a1 and a2 provided as positive sign (a0 + a1 e^{-jw} + a2 e^{-j2w})
+  const dr = 1 + coeffs.a1 * Math.cos(w) + coeffs.a2 * Math.cos(2*w);
+  const di = -coeffs.a1 * Math.sin(w) - coeffs.a2 * Math.sin(2*w);
+
+  const numMag = Math.sqrt(nr*nr + ni*ni);
+  const denMag = Math.sqrt(dr*dr + di*di);
+  return Math.max(1e-12, numMag / denMag);
+}
+
+/* Gaussian fallback (original approx) */
+function gaussianApproxMagnitudeDb(freq, f){
   const fc=f.fc||1000; const q=(f.q&&f.q>0)?f.q:1.0; const gain=f.gain||0;
   const bw=Math.max(1,fc/(q*2)); const diff=Math.log(freq)-Math.log(fc);
   const std=Math.log(1+bw/fc); if(std<=0)return 0;
   return gain*Math.exp(-0.5*(diff*diff)/(std*std));
 }
 
-function totalGainAt(freq,merged){
-  let sum = merged.preamp||0;
-  for(const f of merged.filters) sum += magnitudeResponseAt(freq,f);
-  return sum;
+/* Compute total gain in dB at freq for a single preset */
+function presetGainAtFreqDb(freq, preset){
+  // multiply magnitudes of each filter (in linear) then convert to dB, then add preamp
+  let totalLinear = 1.0;
+  for(const f of preset.filters){
+    // try RBJ coefficients
+    const coeffs = biquadCoeffs(f.type, f.fc, f.q, f.gain);
+    if(coeffs){
+      const mag = biquadMagnitudeAt(freq, coeffs); // linear
+      totalLinear *= mag;
+    } else {
+      // fallback to gaussian approximation for compatibility
+      const magDb = gaussianApproxMagnitudeDb(freq, f);
+      totalLinear *= dbToLinear(magDb);
+    }
+  }
+  const combinedDb = linearToDb(totalLinear) + (preset.preamp||0);
+  return combinedDb;
 }
 
+/* Compute merged object to be plotted similarly (merged has filters array & preamp) */
+function mergedGainAtFreqDb(freq, merged){
+  // merged is already structured like a preset
+  return presetGainAtFreqDb(freq, merged);
+}
+
+/* ========== Plotting ========== */
 function updatePlot(){
-  const dpr=window.devicePixelRatio||1;
-  canvas.width=Math.floor(canvas.clientWidth*dpr);
-  canvas.height=Math.floor(canvas.clientHeight*dpr);
+  // handle HiDPI
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(canvas.clientWidth * dpr);
+  canvas.height = Math.floor(canvas.clientHeight * dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.fillStyle='#071322'; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
 
-  const w=canvas.clientWidth; const h=canvas.clientHeight;
-  const left=50; const right=w-12; const top=12; const bottom=h-36;
+  // clear
+  ctx.fillStyle = '#071322'; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
 
-  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
-  const freqs=[20,50,100,200,500,1000,2000,5000,10000,20000];
-  for(const f of freqs){ const x=xForFreq(f,left,right); ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke(); }
+  const w = canvas.clientWidth; const h = canvas.clientHeight;
+  const left = 60; const right = w - 12; const top = 18; const bottom = h - 40;
 
-  ctx.strokeStyle='rgba(255,255,255,0.03)';
-  const minY=parseFloat(minDb.value); const maxY=parseFloat(maxDb.value);
-  for(let y=Math.ceil(minY);y<=Math.floor(maxY);y+=3){ const yy=yToPixel(y,top,bottom,minY,maxY); ctx.beginPath(); ctx.moveTo(left,yy); ctx.lineTo(right,yy); ctx.stroke(); }
+  // frequency grid - major & minor
+  const majorFreqs = [1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100,200,300,400,500,600,700,800,900,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,20000];
+
+  for(const f of majorFreqs){
+    const x = xForFreq(f,left,right);
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1.4;
+    ctx.moveTo(x,top);
+    ctx.lineTo(x,bottom);
+    ctx.stroke();
+  }
+
+	// labels for frequencies
+	ctx.fillStyle = '#9aa4b2';
+	ctx.font = '12px Inter, Arial';
+	ctx.textAlign = 'center';
+
+	for (const f of majorFreqs) {
+	  const x = xForFreq(f, left, right);
+
+	  let label = f >= 1000 ? (f / 1000) + 'k' : f.toString();
+	  ctx.fillText(label, x, bottom + 18);
+	}
+
 
   const enabled = presets.filter(p=>p.enabled);
-  if(enabled.length===0){ mergedText.textContent='No enabled presets.'; lastMerged=null; return; }
-  const merged = simpleMerge(enabled); lastMerged=merged;
+  if(enabled.length===0){
+    mergedText.textContent='No enabled presets.';
+    lastMerged = null;
+    return;
+  }
 
-  const sampleFreqs=[]; for(let i=0;i<800;i++) sampleFreqs.push(Math.pow(10, Math.log10(20)+(i/799)*(Math.log10(20000)-Math.log10(20))));
-  const values=sampleFreqs.map(f=>totalGainAt(f,merged));
+  const merged = simpleMerge(enabled);
+  lastMerged = merged;
 
-  ctx.strokeStyle='#7c9cff'; ctx.lineWidth=2.2; ctx.beginPath();
-  for(let i=0;i<sampleFreqs.length;i++){ const x=xForFreq(sampleFreqs[i],left,right); const y=yToPixel(values[i],top,bottom,minY,maxY); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+  // Y gridlines: draw every 1 dB for clarity, emphasize every 3 dB and 0 dB line
+  const minY = parseFloat(minDb.value);
+  const maxY = parseFloat(maxDb.value);
+  ctx.textAlign = 'right'; ctx.font = '12px Inter, Arial';
+  for(let y = Math.ceil(minY); y <= Math.floor(maxY); y++){
+    const yy = yToPixel(y,top,bottom,minY,maxY);
+    if(y === 0){
+      ctx.strokeStyle = 'rgba(255,183,77,0.9)'; // visible 0dB
+      ctx.lineWidth = 2;
+    } else if (y % 3 === 0){
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1.2;
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+    }
+    ctx.beginPath(); ctx.moveTo(left,yy); ctx.lineTo(right,yy); ctx.stroke();
+
+    // label every 3 dB and 0dB
+    if(y % 3 === 0 || y === 0){
+      ctx.fillStyle = (y === 0) ? '#ffb74d' : '#9aa4b2';
+      ctx.fillText(y + ' dB', left - 10, yy + 4);
+    }
+  }
+
+  // frequency sample points (log spaced)
+  const sampleCount = 900;
+  const sampleFreqs = new Array(sampleCount);
+  const logMin = Math.log10(1);
+  const logMax = Math.log10(96000);
+  for(let i=0;i<sampleCount;i++){
+    sampleFreqs[i] = Math.pow(10, logMin + (i/(sampleCount-1))*(logMax - logMin));
+  }
+
+  // draw individual preset curves (thinner, faded)
+  for(let idx=0; idx<enabled.length; idx++){
+    const p = enabled[idx];
+    const values = sampleFreqs.map(f => presetGainAtFreqDb(f, p));
+    ctx.beginPath();
+    ctx.lineWidth = 1.2;
+    // semi-transparent stroke
+    ctx.strokeStyle = hexToRgba(p.color, 0.45);
+    for(let i=0;i<values.length;i++){
+      const x = xForFreq(sampleFreqs[i], left, right);
+      const y = yToPixel(values[i], top, bottom, minY, maxY);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // draw merged curve (bolder)
+  const mergedValues = sampleFreqs.map(f => mergedGainAtFreqDb(f, merged));
+  ctx.beginPath();
+  ctx.lineWidth = 2.6;
+  ctx.strokeStyle = '#7c9cff';
+  ctx.setLineDash([]); // solid
+  for(let i=0;i<mergedValues.length;i++){
+    const x = xForFreq(sampleFreqs[i], left, right);
+    const y = yToPixel(mergedValues[i], top, bottom, minY, maxY);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
   ctx.stroke();
 
-  ctx.fillStyle='#9aa4b2'; ctx.font='12px Inter, Arial'; ctx.textAlign='center';
-  for(const f of freqs){ const x=xForFreq(f,left,right); ctx.fillText(String(f),x,bottom+18); }
-  ctx.textAlign='right'; ctx.fillText(maxY+' dB',left-8,top+6); ctx.fillText(minY+' dB',left-8,bottom+6);
-
-  mergedText.innerHTML = ''; mergedText.appendChild(buildMergedTextHTML(merged));
+  // Update merged text output (clean format)
+  mergedText.innerHTML = '';
+  mergedText.appendChild(buildMergedTextHTML(merged));
 }
+
+/* helpers for plot */
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function xForFreq(freq,left,right){ const logMin=Math.log10(1); const logMax=Math.log10(20000); const t=(Math.log10(freq)-logMin)/(logMax-logMin); return left + t*(right-left); }
+function yToPixel(db,top,bottom,minY,maxY){ const t=(db-minY)/(maxY-minY); return bottom - t*(bottom-top); }
 
 function buildMergedTextHTML(merged){
   const container = document.createElement('div');
@@ -229,12 +718,20 @@ function buildMergedTextHTML(merged){
   return container;
 }
 
-function xForFreq(freq,left,right){ const logMin=Math.log10(20); const logMax=Math.log10(20000); const t=(Math.log10(freq)-logMin)/(logMax-logMin); return left+t*(right-left); }
-function yToPixel(db,top,bottom,minY,maxY){ const t=(db-minY)/(maxY-minY); return bottom-t*(bottom-top); }
+/* respond to resize */
+window.addEventListener('resize', ()=> { scheduleUpdate(); });
 
-window.addEventListener('resize',()=>updatePlot());
+/* debounce update to avoid thrashing on resize */
+let _updateTimer = null;
+function scheduleUpdate(){
+  if(_updateTimer) clearTimeout(_updateTimer);
+  _updateTimer = setTimeout(()=>{ updatePlot(); _updateTimer = null; }, 80);
+}
+
+/* initial render */
 renderFileList();
-updatePlot();
+scheduleUpdate();
+
 </script>
 </body>
 </html>
